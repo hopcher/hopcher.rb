@@ -159,7 +159,7 @@ class TCPClient < EventEmitter
 
     def handle_node_connection(node)
         loop do
-            buffer = new_socket.gets("\n")
+            buffer = node.socket.gets("\n")
 
             # cut the loop if the other node have disconnected
             if buffer == nil || buffer.length == 0
