@@ -4,6 +4,8 @@ require 'socket'
 include Socket::Constants
 
 require_relative '../models/event_emitter.rb'
+require_relative './node.rb'
+
 class TCPClient < EventEmitter
     ##
     # Creates a new TCPClient described by the +options+
@@ -15,8 +17,8 @@ class TCPClient < EventEmitter
 
         @s_connection = nil
 
-        # Nodes is a hash map which maps a socket to it's node object
-        @nodes = Hash.new
+        # Nodes is an array with all the nodes connected to us
+        @nodes = Array.new
 
         @s_sock_addr = Socket.pack_sockaddr_in(@port, @host)
         # Create a new socket descriptor for the connection with S
@@ -113,17 +115,19 @@ class TCPClient < EventEmitter
         # Accept new nodes
         loop do
             new_socket, addrinfo = server.accept
+            
+            port = new_socket.connect_address.ip_port,
+            ip = new_socket.connect_address.ip_address
 
-            @nodes[new_socket] ||= {
-                :remote_port => @s_socket.connect_address.ip_port,
-                :remote_address => @s_socket.connect_address.ip_address
-            }
+            new_node = Node.new ip, port, new_socket 
+
+            @nodes << new_node
 
             Thread.new {
-                self.handle_node_connection(new_socket, addrinfo)
+                self.handle_node_connection(new_node)
             }
 
-            self.emit(:connection_in, self, new_socket) # TODO: Construct a Node object
+            self.emit(:connection_in, self, new_node) # TODO: Construct a Node object
         end
     end
 
@@ -153,21 +157,20 @@ class TCPClient < EventEmitter
         self.emit(:connection_out, self, socket, node)
     end
 
-    def handle_node_connection(new_socket, addrinfo)
-        # Extract the local ip and local port used
-        # to connect to us
-        remote_port = @s_socket.connect_address.ip_port
-        remote_address = @s_socket.connect_address.ip_address
-
+    def handle_node_connection(node)
         loop do
             buffer = new_socket.gets("\n")
 
             # cut the loop if the other node have disconnected
-            break if buffer == nil || buffer.length == 0
+            if buffer == nil || buffer.length == 0
+                # Remove this socket from the connected sockets list
+                @nodes.reject! {|n| n.socket == node.socket}
+                break
+            end
 
             buffer = buffer.chomp("\n")
 
-            self.emit(:message, self, buffer, remote_address, remote_port)
+            self.emit(:message, self, buffer, node)
         end
     end
 
