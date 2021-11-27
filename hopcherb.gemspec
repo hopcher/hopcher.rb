@@ -5,7 +5,7 @@ Gem::Specification.new do |s|
     s.description = "Hole punching made easier for everyone!"
     s.authors     = ["Amit Katz"]
     s.email       = 'callcraft456@gmail.com'
-    s.files       = ["lib/hopcherb.rb"]
+    s.files       = ["lib/hopcherb.rb", "lib/models/event_emitter.rb", "lib/hopcherb/tcp_client.rb"]
     # s.homepage    =
     #   'https://rubygems.org/gems/hola'
     s.license       = 'MIT'

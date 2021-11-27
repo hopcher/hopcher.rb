@@ -3,3 +3,5 @@ class Hopcherb
         puts "Hello world!"
     end
 end
+
+require "hopcherb/tcp_client"
